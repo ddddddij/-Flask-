@@ -6,6 +6,7 @@ import logging
 from functools import wraps
 import random
 import string
+from passlib.hash import pbkdf2_sha256
 
 # 配置日志
 logging.basicConfig(level=logging.DEBUG)
@@ -86,49 +87,49 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """登录页面，已登录用户直接跳转首页"""
-    # 如果已登录，直接跳转到首页
     if 'user_id' in session:
         return redirect(url_for('index'))
 
     if request.method == 'GET':
-        # 获取跳转目标（之前尝试访问的URL）
         next_page = request.args.get('next', url_for('index'))
         return render_template('login.html', next=next_page)
 
     # 处理登录表单提交
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
-    next_page = request.form.get('next', url_for('index'))  # 从隐藏字段获取
+    next_page = request.form.get('next', url_for('index'))
 
     if not username or not password:
         return render_template('login.html',
-                               error='请输入用户名和密码',
-                               next=next_page)
+                             error='请输入用户名和密码',
+                             next=next_page)
 
     conn = None
     try:
         conn = get_db_connection()
         with conn.cursor(DictCursor) as cursor:
+            # 查询用户信息（包括加密后的密码）
             cursor.execute(
-                "SELECT * FROM userinfo_team6 WHERE username = %s AND password = %s",
-                (username, password)
+                "SELECT * FROM userinfo_team6 WHERE username = %s",
+                (username,)
             )
             user = cursor.fetchone()
 
-            if user:
+            # 使用pbkdf2_sha256验证密码
+            if user and pbkdf2_sha256.verify(password, user['password']):
                 session['user_id'] = user['Id']
                 session['username'] = user['username']
                 logger.debug(f"用户 {username} 登录成功，跳转到: {next_page}")
                 return redirect(next_page)
             else:
                 return render_template('login.html',
-                                       error='用户名或密码错误',
-                                       next=next_page)
+                                     error='用户名或密码错误',
+                                     next=next_page)
     except Exception as e:
         logger.error(f"登录错误: {str(e)}", exc_info=True)
         return render_template('login.html',
-                               error='系统错误，请稍后重试',
-                               next=next_page)
+                             error='系统错误，请稍后重试',
+                             next=next_page)
     finally:
         if conn:
             conn.close()
@@ -303,7 +304,6 @@ def delete_student(sid):
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     """注册页面"""
-    # 如果已登录，直接跳转到首页
     if 'user_id' in session:
         return redirect(url_for('index'))
 
@@ -314,7 +314,7 @@ def register():
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
     confirm_password = request.form.get('confirm_password', '').strip()
-    invite_code = request.form.get('invite_code', '').strip()  # 获取邀请码
+    invite_code = request.form.get('invite_code', '').strip()
 
     # 验证输入
     if not username or not password or not confirm_password or not invite_code:
@@ -349,10 +349,13 @@ def register():
                                      error='用户名已存在',
                                      username=username)
 
-            # 插入新用户
+            # 对密码进行哈希加密
+            hashed_password = pbkdf2_sha256.hash(password)
+
+            # 插入新用户（存储加密后的密码）
             cursor.execute(
                 "INSERT INTO userinfo_team6 (username, password) VALUES (%s, %s)",
-                (username, password)
+                (username, hashed_password)
             )
             conn.commit()
 
