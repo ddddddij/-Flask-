@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户列表</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>用户列表</h1>
+            <div class="user-info">
+                <span>欢迎, {{ username }}!</span>
+                <a href="{{ url_for('logout') }}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 退出</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            <i class="fas fa-info-circle"></i> {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% if error %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <a href="{{ url_for('add_user') }}" class="btn btn-primary btn-add"><i class="fas fa-plus"></i> 添加用户</a>
+
+            <div class="user-table-container">
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户名</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.Id }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>
+                                <a href="{{ url_for('edit_user', user_id=user.Id) }}" class="btn btn-edit"><i class="fas fa-edit"></i> 编辑</a>
+                                <a href="{{ url_for('delete_user', user_id=user.Id) }}" class="btn btn-delete" onclick="return confirm('确定要删除这个用户吗？')"><i class="fas fa-trash-alt"></i> 删除</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="no-data">暂无用户数据</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 删除确认对话框
+        function confirmDelete() {
+            return confirm('确定要删除这个用户吗？');
+        }
+    </script>
+</body>
+</html>
