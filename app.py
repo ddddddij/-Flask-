@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, session, flash
+from flask import Flask, request, render_template, redirect, url_for, session, flash, jsonify
 import pymysql
 from pymysql.cursors import DictCursor
 import os
@@ -264,6 +264,63 @@ def delete_user(user_id):
     finally:
         if conn:
             conn.close()
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """注册页面"""
+    # 如果已登录，直接跳转到首页
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+
+    if request.method == 'GET':
+        return render_template('register.html')
+
+    # 处理注册表单提交
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '').strip()
+    confirm_password = request.form.get('confirm_password', '').strip()
+
+    # 验证输入
+    if not username or not password or not confirm_password:
+        return render_template('register.html', error='请填写所有字段')
+
+    if password != confirm_password:
+        return render_template('register.html', error='两次输入的密码不一致', username=username)
+
+    if len(password) < 6:
+        return render_template('register.html', error='密码长度至少为6位', username=username)
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # 检查用户名是否已存在
+            cursor.execute("SELECT id FROM userinfo WHERE username = %s", (username,))
+            if cursor.fetchone():
+                return render_template('register.html', error='用户名已存在', username=username)
+
+            # 插入新用户
+            cursor.execute(
+                "INSERT INTO userinfo (username, password) VALUES (%s, %s)",
+                (username, password)
+            )
+            conn.commit()
+
+            # 注册成功后自动登录
+            session['user_id'] = cursor.lastrowid
+            session['username'] = username
+
+            logger.debug(f"用户 {username} 注册并登录成功")
+            flash('注册成功！欢迎使用系统', 'success')
+            return redirect(url_for('index'))
+    except Exception as e:
+        logger.error(f"注册失败: {str(e)}", exc_info=True)
+        return render_template('register.html', error='注册失败，请稍后重试', username=username)
+    finally:
+        if conn:
+            conn.close()
+
 
 
 if __name__ == '__main__':

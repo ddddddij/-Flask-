@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户注册</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+
+            <h1>用户注册</h1>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <form action="{{ url_for('register') }}" method="POST" class="login-form">
+            <div class="form-group">
+                <label for="username"><i class="fas fa-user"></i> 用户名</label>
+                <input type="text" id="username" name="username" required
+                       placeholder="请输入用户名" value="{{ username or '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock"></i> 密码</label>
+                <input type="password" id="password" name="password" required
+                       placeholder="请输入密码(至少6位)">
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password"><i class="fas fa-lock"></i> 确认密码</label>
+                <input type="password" id="confirm_password" name="confirm_password" required
+                       placeholder="请再次输入密码">
+            </div>
+
+            <button type="submit" class="login-btn">注 册</button>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="{{ url_for('login') }}" style="color: #4a90e2; text-decoration: none;">
+                    <i class="fas fa-sign-in-alt"></i> 已有账号？立即登录
+                </a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

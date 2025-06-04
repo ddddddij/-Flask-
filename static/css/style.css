@@ -314,3 +314,20 @@ body {
 .alert i {
     margin-right: 8px;
 }
+
+/* 注册页面样式 - 与登录页面共用.login-container样式 */
+.register-link {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.register-link a {
+    color: #4a90e2;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.register-link a:hover {
+    color: #3a7bc8;
+    text-decoration: underline;
+}
