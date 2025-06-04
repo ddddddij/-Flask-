@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>编辑用户</title>
+    <title>添加学生</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="header">
         <div class="container">
-            <h1>编辑用户</h1>
+            <h1>添加学生</h1>
             <div class="user-info">
                 <span>欢迎, {{ username }}!</span>
                 <a href="{{ url_for('logout') }}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 退出</a>
@@ -40,18 +40,27 @@
 
             <div class="form-container">
                 <div class="form-header">
-                    <h2><i class="fas fa-user-edit"></i> 编辑用户信息</h2>
+                    <h2><i class="fas fa-user-plus"></i> 添加新学生</h2>
                 </div>
 
-                <form action="{{ url_for('edit_user', user_id=user.id) }}" method="POST">
+                <form action="{{ url_for('add_student') }}" method="POST">
                     <div class="form-group">
-                        <label for="username"><i class="fas fa-user"></i> 用户名</label>
-                        <input type="text" id="username" name="username" value="{{ user.username }}" required placeholder="请输入用户名">
+                        <label for="name"><i class="fas fa-user"></i> 姓名</label>
+                        <input type="text" id="name" name="name" required placeholder="请输入学生姓名">
                     </div>
 
                     <div class="form-group">
-                        <label for="password"><i class="fas fa-lock"></i> 新密码 (留空则不修改)</label>
-                        <input type="password" id="password" name="password" placeholder="请输入新密码">
+                        <label for="age"><i class="fas fa-calendar-alt"></i> 年龄</label>
+                        <input type="number" id="age" name="age" required placeholder="请输入学生年龄">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gender"><i class="fas fa-venus-mars"></i> 性别</label>
+                        <select id="gender" name="gender" required class="form-control">
+                            <option value="">请选择性别</option>
+                            <option value="男">男</option>
+                            <option value="女">女</option>
+                        </select>
                     </div>
 
                     <div class="form-actions">

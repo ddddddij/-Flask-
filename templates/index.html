@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户列表</title>
+    <title>学生列表</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="header">
         <div class="container">
-            <h1>用户列表</h1>
+            <h1>学生列表</h1>
             <div class="user-info">
                 <span>欢迎, {{ username }}!</span>
                 <a href="{{ url_for('logout') }}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 退出</a>
@@ -36,30 +36,34 @@
             </div>
             {% endif %}
 
-            <a href="{{ url_for('add_user') }}" class="btn btn-primary btn-add"><i class="fas fa-plus"></i> 添加用户</a>
+            <a href="{{ url_for('add_student') }}" class="btn btn-primary btn-add"><i class="fas fa-plus"></i> 添加学生</a>
 
             <div class="user-table-container">
                 <table class="user-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>用户名</th>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th>年龄</th>
+                            <th>性别</th>
                             <th>操作</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for user in users %}
+                        {% for student in students %}
                         <tr>
-                            <td>{{ user.Id }}</td>
-                            <td>{{ user.username }}</td>
+                            <td>{{ student.sid }}</td>
+                            <td>{{ student.name }}</td>
+                            <td>{{ student.age }}</td>
+                            <td>{{ student.gender }}</td>
                             <td>
-                                <a href="{{ url_for('edit_user', user_id=user.Id) }}" class="btn btn-edit"><i class="fas fa-edit"></i> 编辑</a>
-                                <a href="{{ url_for('delete_user', user_id=user.Id) }}" class="btn btn-delete" onclick="return confirm('确定要删除这个用户吗？')"><i class="fas fa-trash-alt"></i> 删除</a>
+                                <a href="{{ url_for('edit_student', sid=student.sid) }}" class="btn btn-edit"><i class="fas fa-edit"></i> 编辑</a>
+                                <a href="{{ url_for('delete_student', sid=student.sid) }}" class="btn btn-delete" onclick="return confirm('确定要删除这个学生吗？')"><i class="fas fa-trash-alt"></i> 删除</a>
                             </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="3" class="no-data">暂无用户数据</td>
+                            <td colspan="5" class="no-data">暂无学生数据</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -71,7 +75,7 @@
     <script>
         // 删除确认对话框
         function confirmDelete() {
-            return confirm('确定要删除这个用户吗？');
+            return confirm('确定要删除这个学生吗？');
         }
     </script>
 </body>

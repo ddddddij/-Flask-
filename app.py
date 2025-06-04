@@ -67,17 +67,17 @@ def index():
     try:
         conn = get_db_connection()
         with conn.cursor(DictCursor) as cursor:
-            cursor.execute("SELECT Id, username FROM userinfo")
-            users = cursor.fetchall()
+            cursor.execute("SELECT sid, name, age, gender FROM student_team6")
+            students = cursor.fetchall()
             return render_template('index.html',
-                                   users=users,
-                                   username=session.get('username'))
+                                 students=students,
+                                 username=session.get('username'))
     except Exception as e:
-        logger.error(f"获取用户列表失败: {str(e)}", exc_info=True)
+        logger.error(f"获取学生列表失败: {str(e)}", exc_info=True)
         return render_template('index.html',
-                               error='获取用户列表失败',
-                               users=[],
-                               username=session.get('username'))
+                             error='获取学生列表失败',
+                             students=[],
+                             username=session.get('username'))
     finally:
         if conn:
             conn.close()
@@ -110,13 +110,13 @@ def login():
         conn = get_db_connection()
         with conn.cursor(DictCursor) as cursor:
             cursor.execute(
-                "SELECT * FROM userinfo WHERE username = %s AND password = %s",
+                "SELECT * FROM userinfo_team6 WHERE username = %s AND password = %s",
                 (username, password)
             )
             user = cursor.fetchone()
 
             if user:
-                session['user_id'] = user['id']
+                session['user_id'] = user['Id']
                 session['username'] = user['username']
                 logger.debug(f"用户 {username} 登录成功，跳转到: {next_page}")
                 return redirect(next_page)
@@ -141,21 +141,52 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.route('/add_user', methods=['GET', 'POST'])
+@app.route('/add_student', methods=['GET', 'POST'])
 @login_required
-def add_user():
-    """添加用户"""
+def add_student():
+    """添加学生"""
     if request.method == 'GET':
-        return render_template('add_user.html', username=session.get('username'))
+        return render_template('add_student.html', username=session.get('username'))
 
     # 处理表单提交
-    username = request.form.get('username', '').strip()
-    password = request.form.get('password', '').strip()
+    name = request.form.get('name', '').strip()
+    age = request.form.get('age', '').strip()
+    gender = request.form.get('gender', '').strip()
 
-    if not username or not password:
-        return render_template('add_user.html',
-                               error='用户名和密码不能为空',
-                               username=session.get('username'))
+    if not name or not age or not gender:
+        return render_template('add_student.html',
+                             error='所有字段不能为空',
+                             username=session.get('username'))
+
+    try:
+        age = int(age)
+    except ValueError:
+        return render_template('add_student.html',
+                             error='年龄必须是数字',
+                             username=session.get('username'))
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # 插入新学生
+            cursor.execute(
+                "INSERT INTO student_team6 (name, age, gender) VALUES (%s, %s, %s)",
+                (name, age, gender)
+            )
+            conn.commit()
+            logger.debug(f"学生 {name} 添加成功")
+            flash('学生添加成功', 'success')
+            return redirect(url_for('index'))
+    except Exception as e:
+        logger.error(f"添加学生失败: {str(e)}", exc_info=True)
+        return render_template('add_student.html',
+                             error='添加学生失败，请稍后重试',
+                             username=session.get('username'))
+    finally:
+        if conn:
+            conn.close()
+
 
     conn = None
     try:
@@ -164,7 +195,7 @@ def add_user():
             # 检查用户名是否已存在
             cursor.execute("SELECT id FROM userinfo WHERE username = %s", (username,))
             if cursor.fetchone():
-                return render_template('add_user.html',
+                return render_template('add_student.html',
                                        error='用户名已存在',
                                        username=session.get('username'))
 
@@ -179,7 +210,7 @@ def add_user():
             return redirect(url_for('index'))
     except Exception as e:
         logger.error(f"添加用户失败: {str(e)}", exc_info=True)
-        return render_template('add_user.html',
+        return render_template('add_student.html',
                                error='添加用户失败，请稍后重试',
                                username=session.get('username'))
     finally:
@@ -187,90 +218,82 @@ def add_user():
             conn.close()
 
 
-@app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
+@app.route('/edit_student/<int:sid>', methods=['GET', 'POST'])
 @login_required
-def edit_user(user_id):
-    """编辑用户"""
+def edit_student(sid):
+    """编辑学生"""
     conn = None
     try:
         conn = get_db_connection()
 
         if request.method == 'GET':
             with conn.cursor(DictCursor) as cursor:
-                cursor.execute("SELECT * FROM userinfo WHERE id = %s", (user_id,))
-                user = cursor.fetchone()
-                if not user:
-                    flash('用户不存在', 'danger')
+                cursor.execute("SELECT * FROM student_team6 WHERE sid = %s", (sid,))
+                student = cursor.fetchone()
+                if not student:
+                    flash('学生不存在', 'danger')
                     return redirect(url_for('index'))
 
-                return render_template('edit_user.html',
-                                       user=user,
-                                       username=session.get('username'))
+                return render_template('edit_student.html',
+                                     student=student,
+                                     username=session.get('username'))
 
         # 处理表单提交
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '').strip()
+        name = request.form.get('name', '').strip()
+        age = request.form.get('age', '').strip()
+        gender = request.form.get('gender', '').strip()
 
-        if not username:
-            return render_template('edit_user.html',
-                                   error='用户名不能为空',
-                                   user={'id': user_id, 'username': username},
-                                   username=session.get('username'))
+        if not name or not age or not gender:
+            return render_template('edit_student.html',
+                                 error='所有字段不能为空',
+                                 student={'sid': sid, 'name': name, 'age': age, 'gender': gender},
+                                 username=session.get('username'))
+
+        try:
+            age = int(age)
+        except ValueError:
+            return render_template('edit_student.html',
+                                 error='年龄必须是数字',
+                                 student={'sid': sid, 'name': name, 'age': age, 'gender': gender},
+                                 username=session.get('username'))
 
         with conn.cursor() as cursor:
-            # 检查用户名是否已被其他用户使用
+            # 更新学生信息
             cursor.execute(
-                "SELECT id FROM userinfo WHERE username = %s AND id != %s",
-                (username, user_id)
+                "UPDATE student_team6 SET name = %s, age = %s, gender = %s WHERE sid = %s",
+                (name, age, gender, sid)
             )
-            if cursor.fetchone():
-                return render_template('edit_user.html',
-                                       error='用户名已被其他用户使用',
-                                       user={'id': user_id, 'username': username},
-                                       username=session.get('username'))
-
-            # 更新用户信息
-            if password:
-                cursor.execute(
-                    "UPDATE userinfo SET username = %s, password = %s WHERE id = %s",
-                    (username, password, user_id)
-                )
-            else:
-                cursor.execute(
-                    "UPDATE userinfo SET username = %s WHERE id = %s",
-                    (username, user_id)
-                )
             conn.commit()
-            logger.debug(f"用户 {user_id} 更新成功")
-            flash('用户信息更新成功', 'success')
+            logger.debug(f"学生 {sid} 更新成功")
+            flash('学生信息更新成功', 'success')
             return redirect(url_for('index'))
     except Exception as e:
-        logger.error(f"更新用户失败: {str(e)}", exc_info=True)
-        return render_template('edit_user.html',
-                               error='更新用户失败，请稍后重试',
-                               user={'id': user_id, 'username': username},
-                               username=session.get('username'))
+        logger.error(f"更新学生失败: {str(e)}", exc_info=True)
+        return render_template('edit_student.html',
+                             error='更新学生失败，请稍后重试',
+                             student={'sid': sid, 'name': name, 'age': age, 'gender': gender},
+                             username=session.get('username'))
     finally:
         if conn:
             conn.close()
 
 
-@app.route('/delete_user/<int:user_id>')
+@app.route('/delete_student/<int:sid>')
 @login_required
-def delete_user(user_id):
-    """删除用户"""
+def delete_student(sid):
+    """删除学生"""
     conn = None
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute("DELETE FROM userinfo WHERE id = %s", (user_id,))
+            cursor.execute("DELETE FROM student_team6 WHERE sid = %s", (sid,))
             conn.commit()
-            logger.debug(f"用户 {user_id} 删除成功")
-            flash('用户删除成功', 'success')
+            logger.debug(f"学生 {sid} 删除成功")
+            flash('学生删除成功', 'success')
             return redirect(url_for('index'))
     except Exception as e:
-        logger.error(f"删除用户失败: {str(e)}", exc_info=True)
-        flash('用户删除失败，请稍后重试', 'danger')
+        logger.error(f"删除学生失败: {str(e)}", exc_info=True)
+        flash('学生删除失败，请稍后重试', 'danger')
         return redirect(url_for('index'))
     finally:
         if conn:
@@ -320,7 +343,7 @@ def register():
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # 检查用户名是否已存在
-            cursor.execute("SELECT id FROM userinfo WHERE username = %s", (username,))
+            cursor.execute("SELECT Id FROM userinfo_team6 WHERE username = %s", (username,))
             if cursor.fetchone():
                 return render_template('register.html',
                                      error='用户名已存在',
@@ -328,7 +351,7 @@ def register():
 
             # 插入新用户
             cursor.execute(
-                "INSERT INTO userinfo (username, password) VALUES (%s, %s)",
+                "INSERT INTO userinfo_team6 (username, password) VALUES (%s, %s)",
                 (username, password)
             )
             conn.commit()
