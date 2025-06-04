@@ -4,6 +4,8 @@ from pymysql.cursors import DictCursor
 import os
 import logging
 from functools import wraps
+import random
+import string
 
 # 配置日志
 logging.basicConfig(level=logging.DEBUG)
@@ -35,6 +37,15 @@ def login_required(f):
 
     return decorated_function
 
+# 生成随机邀请码的函数
+def generate_invite_code(length=8):
+    """生成随机邀请码"""
+    characters = string.ascii_uppercase + string.digits
+    return ''.join(random.choice(characters) for _ in range(length))
+
+# 在应用启动时生成邀请码
+INVITE_CODE = generate_invite_code()
+print(f"当前邀请码: {INVITE_CODE}")  # 在终端显示邀请码
 
 def get_db_connection():
     """获取数据库连接"""
@@ -280,16 +291,29 @@ def register():
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
     confirm_password = request.form.get('confirm_password', '').strip()
+    invite_code = request.form.get('invite_code', '').strip()  # 获取邀请码
 
     # 验证输入
-    if not username or not password or not confirm_password:
-        return render_template('register.html', error='请填写所有字段')
+    if not username or not password or not confirm_password or not invite_code:
+        return render_template('register.html',
+                             error='请填写所有字段',
+                             username=username)
 
     if password != confirm_password:
-        return render_template('register.html', error='两次输入的密码不一致', username=username)
+        return render_template('register.html',
+                             error='两次输入的密码不一致',
+                             username=username)
 
     if len(password) < 6:
-        return render_template('register.html', error='密码长度至少为6位', username=username)
+        return render_template('register.html',
+                             error='密码长度至少为6位',
+                             username=username)
+
+    # 验证邀请码
+    if invite_code != INVITE_CODE:
+        return render_template('register.html',
+                             error='邀请码不正确',
+                             username=username)
 
     conn = None
     try:
@@ -298,7 +322,9 @@ def register():
             # 检查用户名是否已存在
             cursor.execute("SELECT id FROM userinfo WHERE username = %s", (username,))
             if cursor.fetchone():
-                return render_template('register.html', error='用户名已存在', username=username)
+                return render_template('register.html',
+                                     error='用户名已存在',
+                                     username=username)
 
             # 插入新用户
             cursor.execute(
@@ -316,11 +342,12 @@ def register():
             return redirect(url_for('index'))
     except Exception as e:
         logger.error(f"注册失败: {str(e)}", exc_info=True)
-        return render_template('register.html', error='注册失败，请稍后重试', username=username)
+        return render_template('register.html',
+                             error='注册失败，请稍后重试',
+                             username=username)
     finally:
         if conn:
             conn.close()
-
 
 
 if __name__ == '__main__':
